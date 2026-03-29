@@ -1,0 +1,199 @@
+UNO GAME SIMULATION & SEARCH TREES
+============================================================
+Game started. Top card: Red 3
+  P1 (Minimax-Defensive): Yellow 6, Green 5, Blue Skip, Blue 9, Green 9
+  P2 (Expectimax-Offensive): Red 1, Yellow 7, Blue 7, Blue 7, Green 8
+  P3 (User/AI): Yellow Skip, Red 0, Red 6, Green 7, Green 4
+
+============================================================
+Turn 1 | P1 (Minimax-Defensive)
+Top card: Red 3
+Hand: Yellow 6, Green 5, Blue Skip, Blue 9, Green 9
+Valid moves: None (must draw)
+
+→ DECISION: Draw a card (score=19.0)
+
+↓ P1 (Minimax-Defensive) draws a card: Red 6
+
+Hand sizes after turn:
+  P1 (Minimax-Defensive): 6 cards
+  P2 (Expectimax-Offensive): 5 cards
+  P3 (User/AI): 5 cards
+
+----- GENERATED SEARCH TREE -----
+Strategy: Defensive Minimax (Player 1)
+└── P1(MAX) [19.0]
+    └── →Draw [19.0]
+        ├── →Red 1(opp) [19.0]
+        │   ├── →Red 0(opp) [score=19.0] [19.0]
+        │   ├── →Red 6(opp) [score=19.0] [19.0]
+        │   └── →Draw(opp) [score=20.5] [20.5]
+        └── →Draw(opp) [20.5]
+            ├── →Red 0(opp) [score=20.5] [20.5]
+            ├── →Red 6(opp) [score=20.5] [20.5]
+            └── →Draw(opp) [score=22.0] [22.0]
+
+
+
+============================================================
+Turn 2 | P2 (Expectimax-Offensive)
+Top card: Red 3
+Hand: Red 1, Yellow 7, Blue 7, Blue 7, Green 8
+Valid moves: Red 1
+
+Expectimax decisions (depth 3):
+  Red 1: expected score = 47.5
+  Draw (Chance): expected score = 39.67
+
+→ DECISION: Play Red 1 (expected_score=47.5)
+
+✓ P2 (Expectimax-Offensive) played: Red 1
+
+Hand sizes after turn:
+  P1 (Minimax-Defensive): 6 cards
+  P2 (Expectimax-Offensive): 4 cards
+  P3 (User/AI): 5 cards
+
+----- GENERATED SEARCH TREE -----
+Strategy: Offensive Expectimax (Player 2)
+└── MAX(P2) [47.5]
+    ├── →Red 1 [47.5]
+    └── CHANCE(Draw) [39.67]
+        ├── Draw Blue 2 (p=0.03) [39.5]
+        ├── Draw Red 7 (p=0.03) [39.5]
+        ├── Draw Green 5 (p=0.01) [39.5]
+        ├── Draw Blue 6 (p=0.03) [39.5]
+        └── ... (38 more branches pruned)
+
+
+
+============================================================
+Turn 3 | P3 (User/AI)
+Top card: Red 1
+Hand: Yellow Skip, Red 0, Red 6, Green 7, Green 4
+Valid moves: Red 0, Red 6
+
+Minimax (P3-Balanced) decisions (depth 3):
+  Play Red 0: score ≈ 43.0
+  Play Red 6: score ≈ 43.0
+
+→ DECISION: Play Red 0 (score=43.0)
+
+✓ P3 (User/AI) played: Red 0
+
+Hand sizes after turn:
+  P1 (Minimax-Defensive): 6 cards
+  P2 (Expectimax-Offensive): 4 cards
+  P3 (User/AI): 4 cards
+
+----- GENERATED SEARCH TREE -----
+Strategy: Balanced Minimax (Player 3)
+└── P3(MAX) [43.0]
+    ├── →Red 0 [43.0]
+    │   ├── →Red 6(opp) [43.0]
+    │   │   └── →Draw(opp) [score=43.0] [43.0]
+    │   └── →Draw(opp) [45.0]
+    │       └── →Draw(opp) [score=45.0] [45.0]
+    ├── →Red 6 [41.0]
+    │   └── →Yellow 6(opp) [41.0]
+    │       └── →Yellow 7(opp) [score=41.0] [41.0]
+    └── →Draw [33.0]
+        └── →Red 6(opp) [33.0]
+            └── →Draw(opp) [score=33.0] [33.0]
+
+
+
+============================================================
+Turn 4 | P1 (Minimax-Defensive)
+Top card: Red 0
+Hand: Yellow 6, Green 5, Blue Skip, Blue 9, Green 9, Red 6
+Valid moves: Red 6
+
+Minimax decisions (depth 3):
+  Play Red 6: score ≈ 26.0
+
+→ DECISION: Play Red 6 (score=26.0)
+
+✓ P1 (Minimax-Defensive) played: Red 6
+
+Hand sizes after turn:
+  P1 (Minimax-Defensive): 5 cards
+  P2 (Expectimax-Offensive): 4 cards
+  P3 (User/AI): 4 cards
+
+----- GENERATED SEARCH TREE -----
+Strategy: Defensive Minimax (Player 1)
+└── P1(MAX) [26.0]
+    ├── →Red 6 [26.0]
+    │   └── →Draw(opp) [26.0]
+    │       ├── →Red 6(opp) [score=26.0] [26.0]
+    │       └── →Draw(opp) [score=27.5] [27.5]
+    └── →Draw [12.0]
+        └── →Draw(opp) [12.0]
+            └── →Red 6(opp) [score=12.0] [12.0]
+
+
+
+============================================================
+Turn 5 | P2 (Expectimax-Offensive)
+Top card: Red 6
+Hand: Yellow 7, Blue 7, Blue 7, Green 8
+Valid moves: None (must draw)
+
+Expectimax decisions (depth 3):
+  Draw (Chance): expected score = 40.67
+
+→ DECISION: Draw a card (expected_score=40.67)
+
+↓ P2 (Expectimax-Offensive) draws a card: Red 7
+
+Hand sizes after turn:
+  P1 (Minimax-Defensive): 5 cards
+  P2 (Expectimax-Offensive): 5 cards
+  P3 (User/AI): 4 cards
+
+----- GENERATED SEARCH TREE -----
+Strategy: Offensive Expectimax (Player 2)
+└── MAX(P2) [40.67]
+    └── CHANCE(Draw) [40.67]
+        ├── Draw Blue 2 (p=0.03) [40.5]
+        ├── Draw Red 7 (p=0.03) [40.5]
+        ├── Draw Green 5 (p=0.01) [40.5]
+        ├── Draw Blue 6 (p=0.03) [40.5]
+        └── ... (38 more branches pruned)
+
+
+
+============================================================
+Turn 6 | P3 (User/AI)
+Top card: Red 6
+Hand: Yellow Skip, Red 6, Green 7, Green 4
+Valid moves: Red 6
+
+Minimax (P3-Balanced) decisions (depth 3):
+  Play Red 6: score ≈ 48.0
+
+→ DECISION: Play Red 6 (score=46.0)
+
+✓ P3 (User/AI) played: Red 6
+
+Hand sizes after turn:
+  P1 (Minimax-Defensive): 5 cards
+  P2 (Expectimax-Offensive): 5 cards
+  P3 (User/AI): 3 cards
+
+----- GENERATED SEARCH TREE -----
+Strategy: Balanced Minimax (Player 3)
+└── P3(MAX) [46.0]
+    ├── →Red 6 [46.0]
+    │   ├── →Yellow 6(opp) [46.0]
+    │   │   ├── →Yellow 7(opp) [score=46.0] [46.0]
+    │   │   └── →Draw(opp) [score=48.0] [48.0]
+    │   └── →Draw(opp) [48.0]
+    │       ├── →Red 7(opp) [score=48.0] [48.0]
+    │       └── →Draw(opp) [score=50.0] [50.0]
+    └── →Draw [36.0]
+        └── →Yellow 6(opp) [36.0]
+            └── →Yellow 7(opp) [score=36.0] [36.0]
+
+
