@@ -177,23 +177,12 @@ def draw_card_back(surface, x, y, w=CARD_W, h=CARD_H):
 # ─── Panel Helper ──────────────────────────────────────────────────────────────
 
 def draw_panel(surface, rect, title=None, border_color=PANEL_BORDER):
-    # Glass effect background
-    s = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
-    pygame.draw.rect(s, PANEL_COLOR, s.get_rect(), border_radius=12)
-    surface.blit(s, (rect.x, rect.y))
-    
-    # Border
-    pygame.draw.rect(surface, border_color, rect, width=2, border_radius=12)
-    
-    # Header area
+    pygame.draw.rect(surface, PANEL_COLOR, rect, border_radius=10)
+    pygame.draw.rect(surface, border_color, rect, width=2, border_radius=10)
     if title:
-        header_rect = pygame.Rect(rect.x, rect.y, rect.width, 35)
-        pygame.draw.rect(surface, (20, 25, 40, 200), header_rect, border_top_left_radius=12, border_top_right_radius=12)
-        pygame.draw.line(surface, border_color, (rect.x, rect.y + 35), (rect.right, rect.y + 35), 2)
-        
-        font = pygame.font.SysFont('Arial', 16, bold=True)
-        t = font.render(title, True, WHITE)
-        surface.blit(t, (rect.x + 15, rect.y + 8))
+        font = pygame.font.SysFont('Arial', 14, bold=True)
+        t = font.render(title, True, TEXT_DIM)
+        surface.blit(t, (rect.x + 10, rect.y + 8))
 
 
 def draw_text(surface, text, x, y, font_size=14, color=TEXT_COLOR, bold=False):
@@ -303,66 +292,36 @@ class UNOGui:
 
     def draw_table(self):
         """Draw the green table ellipse."""
-        # Draw a subtle radial gradient for the background
-        center_x, center_y = SCREEN_W // 2, SCREEN_H // 2
-        for radius in range(800, 0, -50):
-            color = (
-                max(5, BG_COLOR[0] - radius // 50),
-                max(10, BG_COLOR[1] - radius // 50),
-                max(20, BG_COLOR[2] - radius // 50)
-            )
-            pygame.draw.circle(self.screen, color, (center_x, center_y), radius)
-
-        # Draw the main table with a thick edge and shadow
-        table_rect = pygame.Rect(180, 130, 920, 540)
-        draw_shadow(self.screen, table_rect, radius=260, offset=(0, 20))
-        
-        # Table rim
-        pygame.draw.ellipse(self.screen, TABLE_EDGE, table_rect.inflate(30, 30))
-        # Inner rim
-        pygame.draw.ellipse(self.screen, (0, 0, 0), table_rect.inflate(6, 6))
-        # Table felt
+        table_rect = pygame.Rect(180, 150, 920, 500)
+        pygame.draw.ellipse(self.screen, TABLE_EDGE, table_rect.inflate(12, 12))
         pygame.draw.ellipse(self.screen, TABLE_COLOR, table_rect)
-        
-        # Draw some subtle concentric rings on the felt
-        pygame.draw.ellipse(self.screen, (22, 105, 55), table_rect.inflate(-100, -100), width=3)
-        pygame.draw.ellipse(self.screen, (22, 105, 55), table_rect.inflate(-200, -200), width=3)
 
     def draw_center(self):
         """Draw deck and top card in center."""
         cx, cy = 640, 400
 
-        # Draw deck (pile of card backs) staggered for 3D effect
+        # Draw deck (pile of card backs)
         deck_size = len(self.game.state.deck)
-        for i in range(min(7, deck_size)):
-            draw_card_back(self.screen, cx - 110 + i * 2, cy - CARD_H // 2 - i * 2)
+        for i in range(min(5, deck_size)):
+            draw_card_back(self.screen, cx - 90 + i * 2, cy - CARD_H // 2 - i * 2)
 
-        # Deck count styled like a chip
-        font = pygame.font.SysFont('Arial', 14, bold=True)
-        txt = font.render(f"{deck_size}", True, WHITE)
-        pygame.draw.circle(self.screen, (30, 30, 30), (cx - 70, cy), 18)
-        pygame.draw.circle(self.screen, WHITE, (cx - 70, cy), 18, width=2)
-        self.screen.blit(txt, (cx - 70 - txt.get_width()//2, cy - txt.get_height()//2))
+        # Deck count
+        draw_text(self.screen, f"Deck: {deck_size}", cx - 90, cy + CARD_H // 2 + 8, 13, TEXT_DIM)
 
         # Top card
         top = self.game.state.top_card
         if top:
-            draw_card(self.screen, top, cx + 20, cy - CARD_H // 2)
-            draw_text(self.screen, "TOP CARD", cx + 20, cy + CARD_H // 2 + 12, 14, TEXT_DIM, bold=True)
+            draw_card(self.screen, top, cx + 10, cy - CARD_H // 2, highlight=True)
+            draw_text(self.screen, "Top Card", cx + 10, cy + CARD_H // 2 + 8, 13, TEXT_DIM)
 
         # Turn indicator arrow
         current = self.game.state.current_player
         col = PLAYER_COLORS[current]
         name = self.game.PLAYER_NAMES[current]
-        font = pygame.font.SysFont('Arial', 20, bold=True)
-        label = f"▶ {name}'s Turn ◀"
-        
-        # Draw label background for better visibility
+        font = pygame.font.SysFont('Arial', 16, bold=True)
+        label = f"▶ {name}'s Turn"
         t = font.render(label, True, col)
-        bg_rect = pygame.Rect(cx - t.get_width() // 2 - 15, cy - CARD_H // 2 - 60, t.get_width() + 30, 34)
-        pygame.draw.rect(self.screen, (20, 20, 20, 180), bg_rect, border_radius=17)
-        pygame.draw.rect(self.screen, col, bg_rect, width=2, border_radius=17)
-        self.screen.blit(t, (cx - t.get_width() // 2, cy - CARD_H // 2 - 53))
+        self.screen.blit(t, (cx - t.get_width() // 2, cy - CARD_H // 2 - 35))
 
     def draw_player_areas(self):
         """Draw each player's hand and label."""
@@ -370,9 +329,10 @@ class UNOGui:
         current = state.current_player
 
         positions = [
-            (640, 710, True, 45),     # P1 – bottom
-            (80, 400, False, -30),    # P2 – left
-            (640, 90, True, -55),     # P3 – top
+            # (x_center, y_center, layout_horizontal, label_offset_y)
+            (640, 690, True, 25),    # P1 – bottom
+            (90, 400, False, -30),   # P2 – left
+            (640, 160, True, -45),   # P3 – top
         ]
 
         for idx in range(3):
@@ -426,10 +386,10 @@ class UNOGui:
 
     def draw_info_panel(self):
         """Right panel showing AI decisions."""
-        rect = pygame.Rect(SCREEN_W - 300, 20, 280, 460)
-        draw_panel(self.screen, rect, "AI Agent Decisions", PANEL_BORDER)
+        rect = pygame.Rect(SCREEN_W - 280, 10, 270, 450)
+        draw_panel(self.screen, rect, "AI Decisions", PANEL_BORDER)
 
-        y = rect.y + 45
+        y = rect.y + 30
         for line in self.decision_lines:
             clean = line.strip()
             if not clean:
@@ -438,45 +398,44 @@ class UNOGui:
             if 'SKIP' in clean.upper():
                 col = (255, 100, 100)
             # Word wrap
-            chunks = textwrap.wrap(clean, width=35)
+            chunks = textwrap.wrap(clean, width=33)
             for chunk in chunks:
                 if y > rect.bottom - 20:
                     break
-                draw_text(self.screen, chunk, rect.x + 15, y, 13, col)
-                y += 18
+                draw_text(self.screen, chunk, rect.x + 10, y, 12, col)
+                y += 16
 
         # Score display
         if not self.game.game_over:
-            y = max(y, rect.y + 340)
+            y = max(y, rect.y + 320)
             y += 10
-            draw_text(self.screen, "Current Evaluation Values:", rect.x + 15, y, 14, TEXT_DIM, bold=True)
-            pygame.draw.line(self.screen, PANEL_BORDER, (rect.x + 15, y + 20), (rect.right - 15, y + 20), 1)
-            y += 28
+            draw_text(self.screen, "Current Scores:", rect.x + 10, y, 13, TEXT_DIM, bold=True)
+            y += 18
             state = self.game.state
             strategies = ['defensive', 'offensive', 'balanced']
             for i in range(3):
                 sc = evaluate(state, i, strategies[i])
-                draw_text(self.screen, f"P{i+1} : {round(sc, 1)} pts", rect.x + 15, y, 14, PLAYER_COLORS[i], bold=True)
-                y += 22
+                draw_text(self.screen, f"P{i+1}: {round(sc, 1)}", rect.x + 10, y, 13, PLAYER_COLORS[i])
+                y += 18
 
     def draw_log_panel(self):
         """Bottom-right log panel."""
-        rect = pygame.Rect(SCREEN_W - 300, 495, 280, 260)
-        draw_panel(self.screen, rect, "Game Action Log", PANEL_BORDER)
+        rect = pygame.Rect(SCREEN_W - 280, 470, 270, 320)
+        draw_panel(self.screen, rect, "Game Log", PANEL_BORDER)
 
-        y = rect.y + 45
-        recent = self.log_lines[-12:]
+        y = rect.y + 28
+        recent = self.log_lines[-14:]
         for line in recent:
             clean = line.strip()
             if not clean:
                 continue
             col = GOLD if '🏆' in clean else (TEXT_DIM if clean.startswith('Turn') else TEXT_COLOR)
-            chunks = textwrap.wrap(clean, width=35)
+            chunks = textwrap.wrap(clean, width=33)
             for chunk in chunks:
                 if y > rect.bottom - 15:
                     break
-                draw_text(self.screen, chunk, rect.x + 15, y, 12, col)
-                y += 16
+                draw_text(self.screen, chunk, rect.x + 8, y, 11, col)
+                y += 14
 
     def draw_status_bar(self):
         """Bottom status bar."""

@@ -426,10 +426,10 @@ class UNOGui:
 
     def draw_info_panel(self):
         """Right panel showing AI decisions."""
-        rect = pygame.Rect(SCREEN_W - 300, 20, 280, 460)
-        draw_panel(self.screen, rect, "AI Agent Decisions", PANEL_BORDER)
+        rect = pygame.Rect(SCREEN_W - 280, 10, 270, 450)
+        draw_panel(self.screen, rect, "AI Decisions", PANEL_BORDER)
 
-        y = rect.y + 45
+        y = rect.y + 30
         for line in self.decision_lines:
             clean = line.strip()
             if not clean:
@@ -438,45 +438,44 @@ class UNOGui:
             if 'SKIP' in clean.upper():
                 col = (255, 100, 100)
             # Word wrap
-            chunks = textwrap.wrap(clean, width=35)
+            chunks = textwrap.wrap(clean, width=33)
             for chunk in chunks:
                 if y > rect.bottom - 20:
                     break
-                draw_text(self.screen, chunk, rect.x + 15, y, 13, col)
-                y += 18
+                draw_text(self.screen, chunk, rect.x + 10, y, 12, col)
+                y += 16
 
         # Score display
         if not self.game.game_over:
-            y = max(y, rect.y + 340)
+            y = max(y, rect.y + 320)
             y += 10
-            draw_text(self.screen, "Current Evaluation Values:", rect.x + 15, y, 14, TEXT_DIM, bold=True)
-            pygame.draw.line(self.screen, PANEL_BORDER, (rect.x + 15, y + 20), (rect.right - 15, y + 20), 1)
-            y += 28
+            draw_text(self.screen, "Current Scores:", rect.x + 10, y, 13, TEXT_DIM, bold=True)
+            y += 18
             state = self.game.state
             strategies = ['defensive', 'offensive', 'balanced']
             for i in range(3):
                 sc = evaluate(state, i, strategies[i])
-                draw_text(self.screen, f"P{i+1} : {round(sc, 1)} pts", rect.x + 15, y, 14, PLAYER_COLORS[i], bold=True)
-                y += 22
+                draw_text(self.screen, f"P{i+1}: {round(sc, 1)}", rect.x + 10, y, 13, PLAYER_COLORS[i])
+                y += 18
 
     def draw_log_panel(self):
         """Bottom-right log panel."""
-        rect = pygame.Rect(SCREEN_W - 300, 495, 280, 260)
-        draw_panel(self.screen, rect, "Game Action Log", PANEL_BORDER)
+        rect = pygame.Rect(SCREEN_W - 280, 470, 270, 320)
+        draw_panel(self.screen, rect, "Game Log", PANEL_BORDER)
 
-        y = rect.y + 45
-        recent = self.log_lines[-12:]
+        y = rect.y + 28
+        recent = self.log_lines[-14:]
         for line in recent:
             clean = line.strip()
             if not clean:
                 continue
             col = GOLD if '🏆' in clean else (TEXT_DIM if clean.startswith('Turn') else TEXT_COLOR)
-            chunks = textwrap.wrap(clean, width=35)
+            chunks = textwrap.wrap(clean, width=33)
             for chunk in chunks:
                 if y > rect.bottom - 15:
                     break
-                draw_text(self.screen, chunk, rect.x + 15, y, 12, col)
-                y += 16
+                draw_text(self.screen, chunk, rect.x + 8, y, 11, col)
+                y += 14
 
     def draw_status_bar(self):
         """Bottom status bar."""
