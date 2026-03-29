@@ -212,28 +212,28 @@ class UNOGui:
         pygame.display.set_caption("UNO – AI Simulation (24i-2528)")
         self.clock = pygame.time.Clock()
 
-        self.game = UNOGame(p3_mode='simulation')
-        random.seed(42)
+        # Change to manual mode here
+        self.game = UNOGame(p3_mode='manual')
+        self.game.PLAYER_NAMES[2] = "Human Player (You)"  # Update display name
+        
+        random.seed(int(time.time()))
         self.game.reset()
 
         self.running = True
         self.auto_play = False
-        self.auto_delay = 1.5   # seconds between auto turns
+        self.auto_delay = 1.5   # seconds between turns
         self.last_auto = 0
 
         self.log_lines = []
         self.decision_lines = []
-        self.selected_card_idx = None   # for manual P3 mode
 
-        self.animation_queue = []
-        self.anim_card = None
-        self.anim_start = None
-        self.anim_end = None
-        self.anim_t = 0
-
-        self.status_msg = "Press [SPACE] to play next turn | [A] toggle auto-play"
-        self.highlight_cards = []   # indices in current hand to highlight
+        self.status_msg = "[You] Click a valid card, or click Deck to draw! | [A] Auto-Play AI turns"
+        self.highlight_cards = []   
         self.last_played = None
+
+        # Store clickable regions for the human player
+        self.human_card_rects = []
+        self.deck_rect = None
 
     def run(self):
         while self.running:
@@ -254,42 +254,77 @@ class UNOGui:
                     self.do_turn()
                 elif event.key == pygame.K_a:
                     self.auto_play = not self.auto_play
-                    self.status_msg = f"Auto-play: {'ON' if self.auto_play else 'OFF'}"
+                    self.status_msg = f"Auto-play: {'ON' if self.auto_play else 'OFF'} (Only applies to AI turns)"
                 elif event.key == pygame.K_r:
-                    self.game = UNOGame(p3_mode='simulation')
+                    self.game = UNOGame(p3_mode='manual')
+                    self.game.PLAYER_NAMES[2] = "Human Player (You)"
                     random.seed(int(time.time()))
                     self.game.reset()
                     self.log_lines = []
                     self.decision_lines = []
                     self.last_played = None
-                    self.status_msg = "Game reset! Press [SPACE] to start."
+                    self.status_msg = "Game reset! Your turn is handled manually."
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                # Handle human click logic
+                if not self.game.game_over and self.game.state.current_player == 2:
+                    pos = pygame.mouse.get_pos()
+
+                    # Check if they clicked the deck
+                    if self.deck_rect and self.deck_rect.collidepoint(pos):
+                        valid = get_valid_moves(self.game.state.hands[2], self.game.state.top_card)
+                        if not valid:
+                            self.do_turn(human_card=None)
+                        else:
+                            self.status_msg = "You have a valid card to play! Cannot draw."
+                        continue
+
+                    # Check if they clicked a card
+                    for i, (rect, card) in enumerate(reversed(self.human_card_rects)):
+                        if rect.collidepoint(pos):
+                            valid = get_valid_moves(self.game.state.hands[2], self.game.state.top_card)
+                            if card in valid:
+                                self.do_turn(human_card=card)
+                            else:
+                                self.status_msg = "Invalid Move! Card color or number must match the Top Card."
+                            break
 
     def update(self):
         now = time.time()
-        if self.auto_play and not self.game.game_over:
+        # Auto play but STOP if it's the Human's turn
+        if self.auto_play and not self.game.game_over and self.game.state.current_player != 2:
             if now - self.last_auto >= self.auto_delay:
                 self.do_turn()
                 self.last_auto = now
 
-    def do_turn(self):
+    def do_turn(self, human_card=None):
         if self.game.game_over:
             self.status_msg = f"Game Over! Winner: {self.game.PLAYER_NAMES[self.game.winner_idx]} | Press [R] to restart"
             return
-
+            
         current = self.game.state.current_player
-        lines = self.game.step()
+
+        # Prevent manual trigger via SPACE if it's human's turn
+        if current == 2 and human_card is None and get_valid_moves(self.game.state.hands[2], self.game.state.top_card):
+            return
+
+        lines = self.game.step(user_card=human_card)
 
         self.log_lines = lines[-20:]   # keep last 20 lines
         self.last_played = self.game.state.top_card
 
         # Extract decisions for display
-        self.decision_lines = [l for l in lines if 'score' in l.lower() or 'decision' in l.lower() or 'expected' in l.lower()][:10]
+        AI_lines = [l for l in lines if 'score' in l.lower() or 'decision' in l.lower() or 'expected' in l.lower()][:10]
+        if AI_lines:
+            self.decision_lines = AI_lines
 
         if self.game.game_over:
             self.status_msg = f"🏆 Winner: {self.game.PLAYER_NAMES[self.game.winner_idx]}! Press [R] to restart"
         else:
             next_p = self.game.PLAYER_NAMES[self.game.state.current_player]
-            self.status_msg = f"Turn {self.game.turn_number} done | Next: {next_p} | [SPACE] next turn | [A] auto | [R] reset"
+            if self.game.state.current_player == 2:
+                self.status_msg = f"Your Turn! Click a valid card or the Deck to draw."
+            else:
+                self.status_msg = f"Turn {self.game.turn_number} done | Next: {next_p} | [A] auto | [R] reset"
 
     def draw(self):
         self.screen.fill(BG_COLOR)
@@ -337,6 +372,9 @@ class UNOGui:
         for i in range(min(7, deck_size)):
             draw_card_back(self.screen, cx - 110 + i * 2, cy - CARD_H // 2 - i * 2)
 
+        # Store the hit box of the top of the deck for human clicks
+        self.deck_rect = pygame.Rect(cx - 110 + (min(7, deck_size) - 1) * 2, cy - CARD_H // 2 - (min(7, deck_size) - 1) * 2, CARD_W, CARD_H)
+
         # Deck count styled like a chip
         font = pygame.font.SysFont('Arial', 14, bold=True)
         txt = font.render(f"{deck_size}", True, WHITE)
@@ -368,11 +406,13 @@ class UNOGui:
         """Draw each player's hand and label."""
         state = self.game.state
         current = state.current_player
+        
+        self.human_card_rects = [] # reset hit boxes
 
         positions = [
-            (640, 710, True, 45),     # P1 – bottom
+            (640, 90, True, -55),     # P1 – top     (Moved to top so Human is bottom)
             (80, 400, False, -30),    # P2 – left
-            (640, 90, True, -55),     # P3 – top
+            (640, 710, True, 45),     # P3(Human) – bottom 
         ]
 
         for idx in range(3):
@@ -392,36 +432,50 @@ class UNOGui:
             if n == 0:
                 continue
 
-            face_up = (idx == 0)   # only show P1's cards face up (for demo – change as needed)
-            # Actually show all cards face up in simulation for educational value
-            face_up = True
+            # In Human mode, only show the human hand (P3) face up
+            face_up = (idx == 2) 
 
             if horizontal:
-                spacing = min(SMALL_W + 4, (680) // max(n, 1))
-                total_w = spacing * (n - 1) + SMALL_W
+                spacing = min(SMALL_W + 15 if idx == 2 else 4, (680) // max(n, 1))
+                total_w = spacing * (n - 1) + (CARD_W if idx == 2 else SMALL_W)
                 start_x = cx - total_w // 2
+                
+                # Render human hand bigger
+                w, h = (CARD_W, CARD_H) if idx == 2 else (SMALL_W, SMALL_H)
+                
                 for j, card in enumerate(hand):
                     x = start_x + j * spacing
-                    y = cy - SMALL_H // 2
+                    y = cy - h // 2
+                    
                     valid = get_valid_moves(hand, state.top_card)
                     is_valid = card in valid
+                    
+                    # Hover effect for human cards
+                    if idx == 2 and is_current:
+                        m_pos = pygame.mouse.get_pos()
+                        temp_rect = pygame.Rect(x, y, w, h)
+                        if temp_rect.collidepoint(m_pos) and is_valid:
+                            y -= 15 # Pop up on hover
+                            
                     draw_card(self.screen, card, x, y,
-                              SMALL_W, SMALL_H,
-                              highlight=(is_current and is_valid),
-                              face_up=face_up, small=True)
+                              w, h,
+                              highlight=(is_current and is_valid and idx == 2),
+                              face_up=face_up, small=(idx != 2))
+                              
+                    # Save hit box for human clicks
+                    if idx == 2:
+                        self.human_card_rects.append((pygame.Rect(x, y, w, h), card))
             else:
-                # Vertical layout for side players
+                # Vertical layout for side players (Bots)
                 spacing = min(SMALL_H + 4, 380 // max(n, 1))
                 total_h = spacing * (n - 1) + SMALL_H
                 start_y = cy - total_h // 2
                 for j, card in enumerate(hand):
                     y = start_y + j * spacing
                     x = cx - SMALL_W // 2
-                    valid = get_valid_moves(hand, state.top_card)
-                    is_valid = card in valid
                     draw_card(self.screen, card, x, y,
                               SMALL_W, SMALL_H,
-                              highlight=(is_current and is_valid),
+                              highlight=False,
                               face_up=face_up, small=True)
 
     def draw_info_panel(self):
