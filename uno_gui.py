@@ -244,7 +244,7 @@ class UNOGui:
         self.last_anim_text = ""
         self.last_anim_time = 0
 
-        self.title_font = pygame.font.SysFont('Impact', 60, bold=True)
+        self.title_font = pygame.font.SysFont('Arial Black', 55, bold=False)  # Using Arial Black for cleaner, legible impact
         self.font = pygame.font.SysFont('Arial', 30, bold=True)
         self.small_font = pygame.font.SysFont('Arial', 20, bold=True)
 
