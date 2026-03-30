@@ -42,6 +42,9 @@ TEXT_DIM        = (150, 160, 180)
 GOLD            = (255, 215, 0)
 WHITE           = (255, 255, 255)
 BLACK           = (0, 0, 0)
+YELLOW          = (255, 255, 0)
+RED             = (255, 0, 0)
+LIGHT_BLUE      = (173, 216, 230)
 
 CARD_COLORS = {
     'Red':    (237, 28, 36),     # Official UNO Red
@@ -70,6 +73,12 @@ SCREEN_W, SCREEN_H = 1280, 800
 CARD_W, CARD_H     = 80, 115
 SMALL_W, SMALL_H   = 55, 80
 FPS                = 60
+
+# ─── Constants ─────────────────────────────────────────────────────────────────
+
+STATE_MENU = 0
+STATE_PLAYING = 1
+STATE_GAMEOVER = 2
 
 # ─── Visual Helpers ────────────────────────────────────────────────────────────
 
@@ -209,9 +218,11 @@ class UNOGui:
     def __init__(self):
         pygame.init()
         self.screen = pygame.display.set_mode((SCREEN_W, SCREEN_H))
-        pygame.display.set_caption("UNO – AI Simulation (24i-2528)")
+        pygame.display.set_caption("UNO – AI Simulator")
         self.clock = pygame.time.Clock()
 
+        self.app_state = STATE_MENU  # Start at main menu
+        
         # Change to manual mode here
         self.game = UNOGame(p3_mode='manual')
         self.game.PLAYER_NAMES[2] = "Human Player (You)"  # Update display name
@@ -222,14 +233,20 @@ class UNOGui:
         self.running = True
         self.auto_play = False
         self.auto_delay = 1.5   # seconds between turns
-        self.last_auto = 0
+        self.last_auto = time.time()
 
         self.log_lines = []
         self.decision_lines = []
 
-        self.status_msg = "[You] Click a valid card, or click Deck to draw! | [A] Auto-Play AI turns"
+        self.status_msg = "[You] Click a valid card, or click Deck to draw! | Auto AI delay applied."
         self.highlight_cards = []   
         self.last_played = None
+        self.last_anim_text = ""
+        self.last_anim_time = 0
+
+        self.title_font = pygame.font.SysFont('Impact', 60, bold=True)
+        self.font = pygame.font.SysFont('Arial', 30, bold=True)
+        self.small_font = pygame.font.SysFont('Arial', 20, bold=True)
 
         # Store clickable regions for the human player
         self.human_card_rects = []
@@ -250,23 +267,24 @@ class UNOGui:
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     self.running = False
-                elif event.key == pygame.K_SPACE:
-                    self.do_turn()
                 elif event.key == pygame.K_a:
                     self.auto_play = not self.auto_play
                     self.status_msg = f"Auto-play: {'ON' if self.auto_play else 'OFF'} (Only applies to AI turns)"
                 elif event.key == pygame.K_r:
-                    self.game = UNOGame(p3_mode='manual')
-                    self.game.PLAYER_NAMES[2] = "Human Player (You)"
-                    random.seed(int(time.time()))
+                    self.app_state = STATE_MENU
                     self.game.reset()
-                    self.log_lines = []
-                    self.decision_lines = []
-                    self.last_played = None
-                    self.status_msg = "Game reset! Your turn is handled manually."
+                    self.status_msg = "Game Reset!"
+                elif event.key == pygame.K_SPACE:
+                    if self.game.state.current_player != 2: # Only allow space for AI step
+                        self.do_turn()
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                # Handle human click logic
-                if not self.game.game_over and self.game.state.current_player == 2:
+                if self.app_state == STATE_MENU:
+                    self.app_state = STATE_PLAYING
+                    self.game.reset()
+                    self.last_auto = time.time()
+                elif self.app_state == STATE_GAMEOVER:
+                    self.app_state = STATE_MENU
+                elif self.app_state == STATE_PLAYING and not self.game.game_over and self.game.state.current_player == 2:
                     pos = pygame.mouse.get_pos()
 
                     # Check if they clicked the deck
@@ -326,7 +344,65 @@ class UNOGui:
             else:
                 self.status_msg = f"Turn {self.game.turn_number} done | Next: {next_p} | [A] auto | [R] reset"
 
+    def render_menu(self):
+        self.screen.fill((20, 50, 20))
+        title = self.title_font.render("UNO AI SIMULATOR", True, WHITE)
+        title_rect = title.get_rect(center=(SCREEN_W // 2, SCREEN_H // 3))
+        self.screen.blit(title, title_rect)
+
+        prompt = self.font.render("Game Start: Click anywhere to Begin!", True, YELLOW)
+        prompt_rect = prompt.get_rect(center=(SCREEN_W // 2, SCREEN_H // 2 - 20))
+        self.screen.blit(prompt, prompt_rect)
+        
+        auto_prompt = self.font.render("For Auto-Play: Press 'A' during the game", True, WHITE)
+        auto_prompt_rect = auto_prompt.get_rect(center=(SCREEN_W // 2, SCREEN_H // 2 + 20))
+        self.screen.blit(auto_prompt, auto_prompt_rect)
+
+        inst = self.small_font.render("P1: Minimax-Balanced | P2: Expectimax | P3: Human (You)", True, LIGHT_BLUE)
+        inst_rect = inst.get_rect(center=(SCREEN_W // 2, SCREEN_H // 2 + 80))
+        self.screen.blit(inst, inst_rect)
+
+    def render_gameover(self):
+        # Create a semi-transparent dark overlay
+        overlay = pygame.Surface((SCREEN_W, SCREEN_H))
+        overlay.set_alpha(180)
+        overlay.fill((0, 0, 0))
+        self.screen.blit(overlay, (0, 0))
+        
+        # Draw a Popup Window
+        popup_rect = pygame.Rect(0, 0, 500, 250)
+        popup_rect.center = (SCREEN_W // 2, SCREEN_H // 2)
+        pygame.draw.rect(self.screen, (40, 40, 50), popup_rect, border_radius=15)
+        pygame.draw.rect(self.screen, WHITE, popup_rect, width=3, border_radius=15)
+
+        title = self.title_font.render("GAME OVER", True, RED)
+        title_rect = title.get_rect(center=(SCREEN_W // 2, SCREEN_H // 2 - 50))
+        self.screen.blit(title, title_rect)
+
+        winner_id = max(range(3), key=lambda i: min(len(self.game.state.hands[i]), 100))
+        winner_name = self.game.PLAYER_NAMES[winner_id]
+        if self.game.game_over:
+             for i, hand in enumerate(self.game.state.hands):
+                 if len(hand) == 0:
+                     winner_name = self.game.PLAYER_NAMES[i]
+                     winner_id = i
+                     break
+        
+        msg = f"{winner_name} Wins!"
+        prompt = self.font.render(msg, True, YELLOW)
+        prompt_rect = prompt.get_rect(center=(SCREEN_W // 2, SCREEN_H // 2 + 10))
+        self.screen.blit(prompt, prompt_rect)
+
+        sub = self.small_font.render("Click anywhere to return to Menu", True, LIGHT_BLUE)
+        sub_rect = sub.get_rect(center=(SCREEN_W // 2, SCREEN_H // 2 + 60))
+        self.screen.blit(sub, sub_rect)
+
     def draw(self):
+        if self.app_state == STATE_MENU:
+            self.render_menu()
+            pygame.display.flip()
+            return
+
         self.screen.fill(BG_COLOR)
         self.draw_table()
         self.draw_player_areas()
@@ -334,6 +410,13 @@ class UNOGui:
         self.draw_info_panel()
         self.draw_log_panel()
         self.draw_status_bar()
+        
+        if self.app_state == STATE_GAMEOVER:
+            self.render_gameover()
+            
+        if self.game.game_over and self.app_state != STATE_GAMEOVER:
+            self.app_state = STATE_GAMEOVER
+            
         pygame.display.flip()
 
     def draw_table(self):
@@ -507,7 +590,7 @@ class UNOGui:
             pygame.draw.line(self.screen, PANEL_BORDER, (rect.x + 15, y + 20), (rect.right - 15, y + 20), 1)
             y += 28
             state = self.game.state
-            strategies = ['defensive', 'offensive', 'balanced']
+            strategies = ['balanced', 'offensive', 'balanced']
             for i in range(3):
                 sc = evaluate(state, i, strategies[i])
                 draw_text(self.screen, f"P{i+1} : {round(sc, 1)} pts", rect.x + 15, y, 14, PLAYER_COLORS[i], bold=True)

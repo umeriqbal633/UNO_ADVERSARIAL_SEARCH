@@ -432,7 +432,7 @@ def print_tree(node, prefix='', is_last=True, max_children=4):
 # ─── Game Controller ───────────────────────────────────────────────────────────
 
 class UNOGame:
-    PLAYER_NAMES = ['P1 (Minimax-Defensive)', 'P2 (Expectimax-Offensive)', 'P3 (User/AI)']
+    PLAYER_NAMES = ['P1 (Minimax-Balanced)', 'P2 (Expectimax-Offensive)', 'P3 (User/AI)']
     DEPTH = 3
 
     def __init__(self, p3_mode='simulation'):
@@ -468,9 +468,9 @@ class UNOGame:
             self._log(f"  {self.PLAYER_NAMES[i]}: {', '.join(str(c) for c in hand)}")
 
     def get_p1_move(self):
-        """P1: Minimax defensive."""
+        """P1: Minimax balanced."""
         score, action, tree = minimax_with_tree(
-            self.state, self.DEPTH, 0, True, 'defensive')
+            self.state, self.DEPTH, 0, True, 'balanced')
         key = f"Turn {self.turn_number} P1"
         self.tree_logs[key] = tree
         return action, score
@@ -546,7 +546,7 @@ class UNOGame:
             if valid:
                 for card in valid:
                     test_state, _ = state.apply_move(current, card)
-                    s = evaluate(test_state, 0, 'defensive')
+                    s = evaluate(test_state, 0, 'balanced')
                     lines.append(f"\nPlay: {card}")
                     lines.append(f"Expected score: {round(s,2)}")
             if not valid:
