@@ -200,13 +200,13 @@ def draw_panel(surface, rect, title=None, border_color=PANEL_BORDER):
         pygame.draw.rect(surface, (20, 25, 40, 200), header_rect, border_top_left_radius=12, border_top_right_radius=12)
         pygame.draw.line(surface, border_color, (rect.x, rect.y + 35), (rect.right, rect.y + 35), 2)
         
-        font = pygame.font.SysFont('Arial', 16, bold=True)
+        font = pygame.font.SysFont('arial', 16, bold=True)
         t = font.render(title, True, WHITE)
         surface.blit(t, (rect.x + 15, rect.y + 8))
 
 
 def draw_text(surface, text, x, y, font_size=14, color=TEXT_COLOR, bold=False):
-    font = pygame.font.SysFont('Arial', font_size, bold=bold)
+    font = pygame.font.SysFont('arial', font_size, bold=bold)
     t = font.render(text, True, color)
     surface.blit(t, (x, y))
     return t.get_height()
@@ -244,9 +244,10 @@ class UNOGui:
         self.last_anim_text = ""
         self.last_anim_time = 0
 
-        self.title_font = pygame.font.SysFont('Arial Black', 55, bold=False)  # Using Arial Black for cleaner, legible impact
-        self.font = pygame.font.SysFont('Arial', 30, bold=True)
-        self.small_font = pygame.font.SysFont('Arial', 20, bold=True)
+        # Using standard 'arial' ensuring it renders clearly and legibly on Windows
+        self.title_font = pygame.font.SysFont('arial', 70, bold=True)
+        self.font = pygame.font.SysFont('arial', 32, bold=True)
+        self.small_font = pygame.font.SysFont('arial', 22, bold=True)
 
         # Store clickable regions for the human player
         self.human_card_rects = []
